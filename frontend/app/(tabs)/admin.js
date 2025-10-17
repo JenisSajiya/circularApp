@@ -1,3 +1,4 @@
+//frontend/app/(tabs)/admin.js
 import React from "react";
 import AdminScreen from "../screens/AdminScreen";
 

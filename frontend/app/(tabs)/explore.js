@@ -1,3 +1,4 @@
+//frontend/app/(tabs)/explore.js
 import React from "react";
 import StudentScreen from "../screens/StudentScreen";
 

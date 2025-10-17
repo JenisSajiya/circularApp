@@ -1,4 +1,4 @@
-// routes/events.js
+//backend/routes/events.js
 const express = require("express");
 const { body, validationResult } = require("express-validator");
 const Event = require("../models/Event"); // your Event model

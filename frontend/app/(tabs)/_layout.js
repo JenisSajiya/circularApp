@@ -1,4 +1,4 @@
-// tabs/layout.js
+//frontend/app/(tabs)/_layout.js
 import React from "react";
 import { Tabs } from "expo-router";
 import { Text, Image, View } from "react-native";
@@ -8,6 +8,7 @@ export default function TabLayout() {
     <Tabs
       screenOptions={{
         headerShown: true,
+        tabBarStyle: { display: "none" },
         headerLeft: () => (
           <View style={{ marginLeft: 10 }}>
             <Image

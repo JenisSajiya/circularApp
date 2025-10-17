@@ -1,8 +1,36 @@
-// frontend/api.js (adjust path/name to match your imports)
-export const BACKEND_URL = "http://10.204.117.204:5000"; // your backend base
+//frontend/app/api.js
+import AsyncStorage from "@react-native-async-storage/async-storage";
+
+export const BACKEND_URL = "http://192.168.1.44:5000"; // your backend base
 const BASE_API = `${BACKEND_URL.replace(/\/$/, "")}/api/events`;
 
-// Fetch all events
+// ✅ Token helpers
+export const setToken = async (token) => {
+  try {
+    await AsyncStorage.setItem("authToken", token);
+  } catch (err) {
+    console.error("Error storing token:", err);
+  }
+};
+
+export const getToken = async () => {
+  try {
+    return await AsyncStorage.getItem("authToken");
+  } catch (err) {
+    console.error("Error getting token:", err);
+    return null;
+  }
+};
+
+export const removeToken = async () => {
+  try {
+    await AsyncStorage.removeItem("authToken");
+  } catch (err) {
+    console.error("Error removing token:", err);
+  }
+};
+
+// Fetch all events (no auth needed)
 export const fetchEvents = async () => {
   try {
     const res = await fetch(BASE_API);
@@ -14,15 +42,19 @@ export const fetchEvents = async () => {
   }
 };
 
-// Create a new event
-// payload: { name, startDate, endDate, time, venue, description, category, fileUrl }
+// Create a new event (admin only) ✅ include token
 export const createEvent = async (payload) => {
   try {
+    const token = await getToken();
     const res = await fetch(BASE_API, {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: token ? `Bearer ${token}` : "",
+      },
       body: JSON.stringify(payload),
     });
+
     const data = await res.json();
     if (!res.ok) {
       const message = data.message || (data.errors ? JSON.stringify(data.errors) : "Failed to create event");

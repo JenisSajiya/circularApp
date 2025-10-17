@@ -4,7 +4,7 @@ import {
   View, Text, TextInput, Button, Alert, StyleSheet, ScrollView, TouchableOpacity
 } from "react-native";
 import { useRouter } from "expo-router";
-import { BACKEND_URL } from "../api";
+import { BACKEND_URL, setToken } from "../api"; // ✅ import setToken
 
 export default function HomeScreen() {
   const router = useRouter();
@@ -28,13 +28,11 @@ export default function HomeScreen() {
         body: JSON.stringify(body),
       });
 
-      // read raw text first (handles HTML error pages)
       const raw = await res.text();
       let data;
       try {
         data = raw ? JSON.parse(raw) : {};
       } catch (parseErr) {
-        // Not JSON - use raw text as message
         data = { message: raw };
       }
 
@@ -44,8 +42,10 @@ export default function HomeScreen() {
       }
 
       if (isLogin) {
-        // Save token if needed (AsyncStorage or context)
-        // Redirect based on role
+        // ✅ Save token after login
+        if (data.token) await setToken(data.token);
+
+        // ✅ Route based on role
         if (data.role === "admin") {
           router.replace("/(tabs)/admin");
         } else {

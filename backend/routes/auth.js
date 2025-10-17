@@ -5,16 +5,13 @@ const bcrypt = require("bcryptjs");
 
 const router = express.Router();
 
-console.log("[auth] auth routes file loaded");
-
-// Debug endpoint to verify route mounting
+// Debug endpoint
 router.get("/_debug", (req, res) => {
   res.json({ ok: true, msg: "auth route mounted" });
 });
 
 // SIGNUP
 router.post("/signup", async (req, res) => {
-  console.log("[auth] POST /signup - body:", req.body);
   try {
     const { name, email, password } = req.body;
 
@@ -25,6 +22,7 @@ router.post("/signup", async (req, res) => {
     if (existing)
       return res.status(400).json({ message: "User already exists" });
 
+    // Role assignment
     let role = "student";
     if (email.endsWith("@tce.edu") && !email.includes("student")) role = "admin";
 
@@ -34,7 +32,7 @@ router.post("/signup", async (req, res) => {
     res.status(201).json({ message: "Signup successful" });
   } catch (err) {
     console.error("[auth] signup error:", err);
-    res.status(500).json({ message: err.message || "Server error", stack: err.stack });
+    res.status(500).json({ message: err.message || "Server error" });
   }
 });
 
@@ -50,10 +48,10 @@ router.post("/login", async (req, res) => {
     if (!isMatch)
       return res.status(400).json({ message: "Invalid credentials" });
 
-    // ✅ Use JWT_SECRET from .env
+    // ✅ Use consistent secret from .env
     const token = jwt.sign(
       { id: user._id, role: user.role },
-      process.env.JWT_SECRET || "secret", // fallback if env not set
+      process.env.JWT_SECRET,
       { expiresIn: "7d" }
     );
 

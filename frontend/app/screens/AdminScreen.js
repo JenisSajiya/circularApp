@@ -1,3 +1,4 @@
+//frontend/app/screens/AdminScreen.js
 import React, { useState, useEffect } from "react";
 import {
   View,
@@ -11,7 +12,7 @@ import {
   TouchableOpacity,
 } from "react-native";
 import { Picker } from "@react-native-picker/picker";
-import { fetchEvents, createEvent, BACKEND_URL } from "../api";
+import { fetchEvents, createEvent, getToken } from "../api";
 
 export default function AdminScreen() {
   const [name, setName] = useState("");
@@ -29,11 +30,17 @@ export default function AdminScreen() {
   // Submit event with Drive URL (JSON body)
   const submitEvent = async () => {
     if (!name || !startDate || !endDate || !time || !venue) {
-      return Alert.alert("Validation", "Please fill required fields: name, startDate, endDate, time, venue");
+      return Alert.alert(
+        "Validation",
+        "Please fill required fields: name, startDate, endDate, time, venue"
+      );
     }
 
     if (fileUrl && !/^https?:\/\/.+$/.test(fileUrl)) {
-      return Alert.alert("Invalid URL", "Please enter a valid http(s) URL for the Drive link");
+      return Alert.alert(
+        "Invalid URL",
+        "Please enter a valid http(s) URL for the Drive link"
+      );
     }
 
     const payload = {
@@ -48,13 +55,28 @@ export default function AdminScreen() {
     };
 
     try {
-      await createEvent(payload);
+      const token = await getToken();
+      if (!token) {
+        return Alert.alert(
+          "Unauthorized",
+          "You are not logged in. Please login again."
+        );
+      }
+
+      await createEvent(payload); // createEvent uses token automatically
       Alert.alert("Success", "Event Created Successfully");
       clearForm();
       loadEvents();
     } catch (err) {
       console.error(err);
-      Alert.alert("Error", err.message || "Failed to create event");
+      if (
+        err.message.includes("401") ||
+        err.message.toLowerCase().includes("unauthorized")
+      ) {
+        Alert.alert("Unauthorized", "Your session has expired. Please login again.");
+      } else {
+        Alert.alert("Error", err.message || "Failed to create event");
+      }
     }
   };
 

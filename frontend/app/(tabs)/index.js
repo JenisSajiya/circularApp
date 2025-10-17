@@ -1,3 +1,4 @@
+//frontend/app/(tabs)/index.js
 import React from "react";
 import HomeScreen from "../screens/HomeScreen";
 
