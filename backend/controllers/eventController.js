@@ -1,12 +1,30 @@
-// controllers/eventController.js
 const Event = require("../models/Event");
 
 const createEvent = async (req, res) => {
   try {
+    const { name, startDate, endDate, time, venue, description, category, fileUrl } = req.body;
+
+    // Basic validation (you can expand this if needed)
+    if (!name || !startDate || !endDate || !time || !venue) {
+      return res.status(400).json({ message: "Missing required fields" });
+    }
+
+    // Optional: validate URL format
+    if (fileUrl && !/^https?:\/\/.+$/.test(fileUrl)) {
+      return res.status(400).json({ message: "Invalid file URL format" });
+    }
+
     const event = new Event({
-      ...req.body,
-      fileUrl: req.file ? req.file.path : null,
+      name,
+      startDate,
+      endDate,
+      time,
+      venue,
+      description,
+      category,
+      fileUrl: fileUrl || null, // just store the drive link directly
     });
+
     const savedEvent = await event.save();
     res.status(201).json(savedEvent);
   } catch (err) {
@@ -24,4 +42,3 @@ const getEvents = async (req, res) => {
 };
 
 module.exports = { createEvent, getEvents };
-
