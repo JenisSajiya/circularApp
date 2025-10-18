@@ -5,6 +5,9 @@ const cors = require("cors");
 const dotenv = require("dotenv");
 const eventRoutes = require("./routes/events");
 const authRoutes = require("./routes/auth"); // ✅ Added auth route
+const adminRoutes = require("./routes/admin");
+
+
 
 dotenv.config();
 const app = express();
@@ -16,6 +19,7 @@ app.use(express.json());
 // Routes
 app.use("/api/events", eventRoutes);
 app.use("/api/auth", authRoutes); // ✅ Add authentication routes
+app.use("/api/admin", adminRoutes);
 
 // MongoDB Connection & Server Start
 mongoose.connect(process.env.MONGO_URI)

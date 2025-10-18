@@ -1,8 +1,9 @@
-//frontend/app/api.js
+// frontend/app/api.js
 import AsyncStorage from "@react-native-async-storage/async-storage";
 
-export const BACKEND_URL = "http://192.168.1.44:5000"; // your backend base
+export const BACKEND_URL = "http://10.160.82.204:5000"; // your backend base
 const BASE_API = `${BACKEND_URL.replace(/\/$/, "")}/api/events`;
+const ADMIN_API = `${BACKEND_URL.replace(/\/$/, "")}/api/admin`;
 
 // ✅ Token helpers
 export const setToken = async (token) => {
@@ -57,12 +58,45 @@ export const createEvent = async (payload) => {
 
     const data = await res.json();
     if (!res.ok) {
-      const message = data.message || (data.errors ? JSON.stringify(data.errors) : "Failed to create event");
+      const message =
+        data.message || (data.errors ? JSON.stringify(data.errors) : "Failed to create event");
       throw new Error(message);
     }
     return data;
   } catch (err) {
     console.error("Create event error:", err);
+    throw err;
+  }
+};
+
+// ✅ Admin management: grant/revoke
+// in frontend/app/api.js
+export const manageAdmin = async ({ email, action }, token) => {
+  try {
+    const res = await fetch(`${ADMIN_API}/role`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${token}`,
+      },
+      body: JSON.stringify({ email, action }),
+    });
+
+    const text = await res.text(); // read raw text first
+    let data;
+    try {
+      data = text ? JSON.parse(text) : {};
+    } catch (parseErr) {
+      // If server returned HTML or other text, throw meaningful error containing the response body
+      throw new Error(`Invalid JSON response from server: ${text}`);
+    }
+
+    if (!res.ok) {
+      throw new Error(data.message || `Request failed (${res.status})`);
+    }
+    return data;
+  } catch (err) {
+    console.error("Manage admin error:", err);
     throw err;
   }
 };
