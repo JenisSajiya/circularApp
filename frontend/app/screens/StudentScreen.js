@@ -1,4 +1,4 @@
-//frontend/app/screens/StudentScreen.js
+// frontend/app/screens/StudentScreen.js
 import React, { useState, useCallback } from "react";
 import {
   View,
@@ -13,8 +13,11 @@ import {
 import { useFocusEffect } from "@react-navigation/native";
 import { Picker } from "@react-native-picker/picker";
 import { fetchEvents, BACKEND_URL } from "../api";
+import { Stack, useRouter } from "expo-router";
 
 export default function StudentScreen() {
+  const router = useRouter();
+
   const [events, setEvents] = useState([]);
   const [filter, setFilter] = useState("all");
   const [searchQuery, setSearchQuery] = useState("");
@@ -25,6 +28,7 @@ export default function StudentScreen() {
       setEvents(allEvents);
     } catch (err) {
       console.error(err);
+      Alert.alert("Error", "Failed to load events");
     }
   };
 
@@ -35,27 +39,36 @@ export default function StudentScreen() {
   );
 
   const openFile = async (fileUrl) => {
-    try {
-      if (!fileUrl) return Alert.alert("No file attached");
+    if (!fileUrl) return Alert.alert("No file attached");
 
-      // If fileUrl is a relative path, prefix BACKEND_URL
-      const url = fileUrl.startsWith("http")
-        ? fileUrl
-        : `${BACKEND_URL.replace(/\/$/, "")}/${fileUrl.replace(/^\/?/, "")}`;
+    const url = fileUrl.startsWith("http")
+      ? fileUrl
+      : `${BACKEND_URL.replace(/\/$/, "")}/${fileUrl.replace(/^\/?/, "")}`;
 
-      const supported = await Linking.canOpenURL(url);
-      if (supported) {
-        await Linking.openURL(url);
-      } else {
-        Alert.alert("Cannot open URL", "This link cannot be opened on your device");
-      }
-    } catch (err) {
-      console.error(err);
-      Alert.alert("Error", "Cannot open file");
+    const supported = await Linking.canOpenURL(url);
+    if (supported) {
+      await Linking.openURL(url);
+    } else {
+      Alert.alert("Cannot open URL", "This link cannot be opened on your device");
     }
   };
 
-  // Filter and search events
+  const handleLogout = () => {
+    Alert.alert(
+      "Logout",
+      "Are you sure you want to logout?",
+      [
+        { text: "Cancel", style: "cancel" },
+        {
+          text: "Logout",
+          style: "destructive",
+          onPress: () => router.replace("/"), // Navigate to home
+        },
+      ],
+      { cancelable: true }
+    );
+  };
+
   const filteredEvents = events.filter((e) => {
     const today = new Date();
     const start = new Date(e.startDate);
@@ -65,7 +78,7 @@ export default function StudentScreen() {
     if (filter === "upcoming" && !(start > today)) return false;
     if (filter === "past" && !(end < today)) return false;
 
-    if (searchQuery.trim() === "") return true;
+    if (!searchQuery.trim()) return true;
     const q = searchQuery.toLowerCase();
     return (
       e.name?.toLowerCase().includes(q) ||
@@ -95,54 +108,66 @@ export default function StudentScreen() {
   });
 
   return (
-    <ScrollView style={styles.container}>
-      <Text style={styles.title}>Explore Events</Text>
-
-      {/* Search Bar */}
-      <TextInput
-        placeholder="Search events..."
-        value={searchQuery}
-        onChangeText={setSearchQuery}
-        style={styles.input}
-        placeholderTextColor="#888"
+    <>
+      {/* This Stack allows header customization in Expo Router */}
+      <Stack.Screen
+        options={{
+          title: "Explore Events",
+          headerRight: () => <Button title="Logout" onPress={handleLogout} color="#FF4500" />,
+        }}
       />
+      <ScrollView style={styles.container}>
+        {/* Search Bar */}
+        <TextInput
+          placeholder="Search events..."
+          value={searchQuery}
+          onChangeText={setSearchQuery}
+          style={styles.input}
+          placeholderTextColor="#888"
+        />
 
-      {/* Filter Dropdown */}
-      <Picker selectedValue={filter} onValueChange={(val) => setFilter(val)} style={styles.picker}>
-        <Picker.Item label="All" value="all" />
-        <Picker.Item label="Ongoing" value="ongoing" />
-        <Picker.Item label="Upcoming" value="upcoming" />
-        <Picker.Item label="Past" value="past" />
-      </Picker>
+        {/* Filter Dropdown */}
+        <Picker
+          selectedValue={filter}
+          onValueChange={(val) => setFilter(val)}
+          style={{ ...styles.picker, color: "#000", backgroundColor: "#fff" }}
+          itemStyle={{ color: "#000" }}
+        >
+          <Picker.Item label="All" value="all" />
+          <Picker.Item label="Ongoing" value="ongoing" />
+          <Picker.Item label="Upcoming" value="upcoming" />
+          <Picker.Item label="Past" value="past" />
+        </Picker>
 
-      {/* Event Cards */}
-      {filteredEvents.length === 0 ? (
-        <Text style={styles.cardText}>No events available.</Text>
-      ) : (
-        filteredEvents.map((e) => (
-          <View
-            key={e._id}
-            style={[
-              styles.card,
-              isOngoing(e) && { borderColor: "#1E90FF", borderWidth: 2, backgroundColor: "#E0F0FF" }
-            ]}
-          >
-            <Text style={styles.cardTitle}>{e.name} {e.category ? `(${e.category})` : null}</Text>
-            <Text style={styles.cardText}>
-              {new Date(e.startDate).toLocaleDateString()} to {new Date(e.endDate).toLocaleDateString()}
-            </Text>
-            <Text style={styles.cardText}>{e.time}</Text>
-            <Text style={styles.cardText}>{e.venue}</Text>
-            <Text style={styles.cardText}>{e.description}</Text>
+        {/* Event Cards */}
+        {filteredEvents.length === 0 ? (
+          <Text style={styles.cardText}>No events available.</Text>
+        ) : (
+          filteredEvents.map((e) => (
+            <View
+              key={e._id}
+              style={[
+                styles.card,
+                isOngoing(e) && { borderColor: "#1E90FF", borderWidth: 2, backgroundColor: "#E0F0FF" },
+              ]}
+            >
+              <Text style={styles.cardTitle}>{e.name} {e.category ? `(${e.category})` : null}</Text>
+              <Text style={styles.cardText}>
+                {new Date(e.startDate).toLocaleDateString()} to {new Date(e.endDate).toLocaleDateString()}
+              </Text>
+              <Text style={styles.cardText}>{e.time}</Text>
+              <Text style={styles.cardText}>{e.venue}</Text>
+              <Text style={styles.cardText}>{e.description}</Text>
 
-            {e.fileUrl && (
-              <View style={styles.buttonContainer}>
-                <Button title="Open File Link" onPress={() => openFile(e.fileUrl)} color="#1E90FF" />
-              </View>
-            )}
-          </View>
-        ))
-      )}
-    </ScrollView>
+              {e.fileUrl && (
+                <View style={styles.buttonContainer}>
+                  <Button title="Open File Link" onPress={() => openFile(e.fileUrl)} color="#1E90FF" />
+                </View>
+              )}
+            </View>
+          ))
+        )}
+      </ScrollView>
+    </>
   );
 }

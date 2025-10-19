@@ -11,13 +11,16 @@ import {
   TouchableOpacity,
   Animated,
   Easing,
+  Button,
 } from "react-native";
 import { Picker } from "@react-native-picker/picker";
 import { fetchEvents, createEvent, getToken, manageAdmin } from "../api";
 import { useNavigation } from "@react-navigation/native";
+import { Stack, useRouter } from "expo-router";
 
 export default function AdminScreen() {
   const navigation = useNavigation();
+  const router = useRouter();
 
   // Event States
   const [name, setName] = useState("");
@@ -38,13 +41,33 @@ export default function AdminScreen() {
   const [action, setAction] = useState("grant"); // "grant" or "revoke"
   const slideAnim = useState(new Animated.Value(300))[0]; // start below screen
 
-  // Header Right Button
+  // Logout Handler
+  const handleLogout = () => {
+    Alert.alert(
+      "Logout",
+      "Are you sure you want to logout?",
+      [
+        { text: "Cancel", style: "cancel" },
+        {
+          text: "Logout",
+          style: "destructive",
+          onPress: () => router.replace("/"), // Navigate to home
+        },
+      ],
+      { cancelable: true }
+    );
+  };
+
+  // Header Right Buttons
   React.useLayoutEffect(() => {
     navigation.setOptions({
       headerRight: () => (
-        <TouchableOpacity onPress={openModal} style={{ marginRight: 15 }}>
-          <Text style={{ color: "#1E90FF", fontWeight: "bold" }}>Edit Permission</Text>
-        </TouchableOpacity>
+        <View style={{ flexDirection: "row", alignItems: "center" }}>
+          <TouchableOpacity onPress={openModal} style={{ marginRight: 15 }}>
+            <Text style={{ color: "#1E90FF", fontWeight: "bold" }}>Edit Permission</Text>
+          </TouchableOpacity>
+          <Button title="Logout" onPress={handleLogout} color="#FF4500" />
+        </View>
       ),
     });
   }, [navigation]);
@@ -162,7 +185,7 @@ export default function AdminScreen() {
   };
 
   const styles = StyleSheet.create({
-    root: { flex: 1, position: "relative", backgroundColor: "#fff" }, // important: relative positioning
+    root: { flex: 1, position: "relative", backgroundColor: "#fff" },
     container: { flex: 1, padding: 20 },
     input: { borderWidth: 1, padding: 10, marginVertical: 5, borderRadius: 5, borderColor: "#ccc", color: "#000" },
     buttonContainer: { marginVertical: 5 },
@@ -214,110 +237,145 @@ export default function AdminScreen() {
     grantBtn: { backgroundColor: "#1E90FF" },
     revokeBtn: { backgroundColor: "#FF6347" },
     smallBtnText: { color: "#fff", fontWeight: "600" },
+    modalInput: { 
+      borderWidth: 1, 
+      padding: 10, 
+      marginVertical: 10, 
+      borderRadius: 5, 
+      borderColor: "#ccc", 
+      color: "#000",
+      backgroundColor: "#fff"
+    },
   });
 
   return (
-    <View style={styles.root}>
-      {/* ScrollView should not block overlay touches: pointerEvents box-none */}
-      <ScrollView style={styles.container} pointerEvents="box-none" contentContainerStyle={{ paddingBottom: 140 }}>
-        {/* Event Form */}
-        <TextInput placeholder="Event Name" value={name} onChangeText={setName} style={styles.input} placeholderTextColor="#888" />
-        <TextInput placeholder="Start Date (YYYY-MM-DD)" value={startDate} onChangeText={setStartDate} style={styles.input} placeholderTextColor="#888" />
-        <TextInput placeholder="End Date (YYYY-MM-DD)" value={endDate} onChangeText={setEndDate} style={styles.input} placeholderTextColor="#888" />
-        <TextInput placeholder="Time" value={time} onChangeText={setTime} style={styles.input} placeholderTextColor="#888" />
-        <TextInput placeholder="Venue" value={venue} onChangeText={setVenue} style={styles.input} placeholderTextColor="#888" />
-        <TextInput placeholder="Description" value={description} onChangeText={setDescription} style={styles.input} placeholderTextColor="#888" />
-        <TextInput placeholder="Category" value={category} onChangeText={setCategory} style={styles.input} placeholderTextColor="#888" />
-        <TextInput placeholder="Google Drive URL (optional)" value={fileUrl} onChangeText={setFileUrl} style={styles.input} placeholderTextColor="#888" autoCapitalize="none" />
-
-        <View style={styles.buttonContainer}>
-          <TouchableOpacity onPress={submitEvent} style={[styles.smallBtn, styles.grantBtn]}>
-            <Text style={styles.smallBtnText}>Submit Event</Text>
-          </TouchableOpacity>
-        </View>
-
-        {/* Search */}
-        <TextInput placeholder="Search events..." value={searchQuery} onChangeText={setSearchQuery} style={styles.input} placeholderTextColor="#888" />
-
-        {/* Filter */}
-        <Text style={styles.headerText}>Filter Events:</Text>
-        <Picker selectedValue={filter} onValueChange={(val) => setFilter(val)} style={styles.picker}>
-          <Picker.Item label="All" value="all" />
-          <Picker.Item label="Ongoing" value="ongoing" />
-          <Picker.Item label="Upcoming" value="upcoming" />
-          <Picker.Item label="Past" value="past" />
-        </Picker>
-
-        {/* Event Cards */}
-        <Text style={styles.headerText}>Events:</Text>
-        {filteredEvents.length === 0 ? (
-          <Text style={styles.cardText}>No events available.</Text>
-        ) : (
-          filteredEvents.map((e) => (
-            <View key={e._id} style={[styles.card, isOngoing(e) && { borderColor: "#1E90FF", borderWidth: 2, backgroundColor: "#E0F0FF" }]}>
-              <Text style={styles.cardTitle}>{e.name} {e.category ? `(${e.category})` : null}</Text>
-              <Text style={styles.cardText}>{new Date(e.startDate).toLocaleDateString()} to {new Date(e.endDate).toLocaleDateString()}</Text>
-              <Text style={styles.cardText}>{e.time}</Text>
-              <Text style={styles.cardText}>{e.venue}</Text>
-              <Text style={styles.cardText}>{e.description}</Text>
-              {e.fileUrl && (
-                <View style={styles.buttonContainer}>
-                  <TouchableOpacity onPress={() => openUrl(e.fileUrl)}>
-                    <Text style={styles.linkText}>Open Drive Link</Text>
-                  </TouchableOpacity>
-                </View>
-              )}
+    <>
+      {/* Stack Screen for header customization */}
+      <Stack.Screen
+        options={{
+          title: "Admin Dashboard",
+          headerRight: () => (
+            <View style={{ flexDirection: "row", alignItems: "center" }}>
+              <Button title="Logout" onPress={handleLogout} color="#FF4500" />
             </View>
-          ))
+          ),
+        }}
+      />
+      
+      <View style={styles.root}>
+        <ScrollView style={styles.container} pointerEvents="box-none" contentContainerStyle={{ paddingBottom: 140 }}>
+          {/* Event Form */}
+          <TextInput placeholder="Event Name" value={name} onChangeText={setName} style={styles.input} placeholderTextColor="#888" />
+          <TextInput placeholder="Start Date (YYYY-MM-DD)" value={startDate} onChangeText={setStartDate} style={styles.input} placeholderTextColor="#888" />
+          <TextInput placeholder="End Date (YYYY-MM-DD)" value={endDate} onChangeText={setEndDate} style={styles.input} placeholderTextColor="#888" />
+          <TextInput placeholder="Time" value={time} onChangeText={setTime} style={styles.input} placeholderTextColor="#888" />
+          <TextInput placeholder="Venue" value={venue} onChangeText={setVenue} style={styles.input} placeholderTextColor="#888" />
+          <TextInput placeholder="Description" value={description} onChangeText={setDescription} style={styles.input} placeholderTextColor="#888" />
+          <TextInput placeholder="Category" value={category} onChangeText={setCategory} style={styles.input} placeholderTextColor="#888" />
+          <TextInput placeholder="Google Drive URL (optional)" value={fileUrl} onChangeText={setFileUrl} style={styles.input} placeholderTextColor="#888" autoCapitalize="none" />
+
+          <View style={styles.buttonContainer}>
+            <TouchableOpacity onPress={submitEvent} style={[styles.smallBtn, styles.grantBtn]}>
+              <Text style={styles.smallBtnText}>Submit Event</Text>
+            </TouchableOpacity>
+          </View>
+
+          {/* Search */}
+          <TextInput placeholder="Search events..." value={searchQuery} onChangeText={setSearchQuery} style={styles.input} placeholderTextColor="#888" />
+
+          {/* Filter */}
+          <Text style={styles.headerText}>Filter Events:</Text>
+          <Picker
+            selectedValue={filter}
+            onValueChange={(val) => setFilter(val)}
+            style={{
+              ...styles.picker,
+              color: "#000",
+              backgroundColor: "#fff"
+            }}
+            itemStyle={{ color: "#000" }}
+          >
+            <Picker.Item label="All" value="all" />
+            <Picker.Item label="Ongoing" value="ongoing" />
+            <Picker.Item label="Upcoming" value="upcoming" />
+            <Picker.Item label="Past" value="past" />
+          </Picker>
+
+          {/* Event Cards */}
+          <Text style={styles.headerText}>Events:</Text>
+          {filteredEvents.length === 0 ? (
+            <Text style={styles.cardText}>No events available.</Text>
+          ) : (
+            filteredEvents.map((e) => (
+              <View key={e._id} style={[styles.card, isOngoing(e) && { borderColor: "#1E90FF", borderWidth: 2, backgroundColor: "#E0F0FF" }]}>
+                <Text style={styles.cardTitle}>{e.name} {e.category ? `(${e.category})` : null}</Text>
+                <Text style={styles.cardText}>{new Date(e.startDate).toLocaleDateString()} to {new Date(e.endDate).toLocaleDateString()}</Text>
+                <Text style={styles.cardText}>{e.time}</Text>
+                <Text style={styles.cardText}>{e.venue}</Text>
+                <Text style={styles.cardText}>{e.description}</Text>
+                {e.fileUrl && (
+                  <View style={styles.buttonContainer}>
+                    <TouchableOpacity onPress={() => openUrl(e.fileUrl)}>
+                      <Text style={styles.linkText}>Open Drive Link</Text>
+                    </TouchableOpacity>
+                  </View>
+                )}
+              </View>
+            ))
+          )}
+        </ScrollView>
+
+        {/* Admin Permission Modal */}
+        {modalVisible && (
+          <Animated.View style={[styles.modalPanel, { top: slideAnim }]}>
+            <Text style={styles.modalTitle}>Grant/Revoke Admin</Text>
+            
+            <TextInput
+              placeholder="Enter user email"
+              value={email}
+              onChangeText={setEmail}
+              style={styles.modalInput}
+              placeholderTextColor="#888"
+              autoCapitalize="none"
+              keyboardType="email-address"
+            />
+            
+            <Picker
+              selectedValue={action}
+              onValueChange={setAction}
+              style={{
+                marginVertical: 10,
+                borderWidth: 1,
+                borderColor: "#ccc",
+                backgroundColor: "#fff"
+              }}
+            >
+              <Picker.Item label="Grant Admin" value="grant" />
+              <Picker.Item label="Revoke Admin" value="revoke" />
+            </Picker>
+
+            <View style={{ flexDirection: "row", justifyContent: "space-between" }}>
+              <TouchableOpacity onPress={closeModal} style={[styles.smallBtn, { backgroundColor: "#666" }]}>
+                <Text style={styles.smallBtnText}>Cancel</Text>
+              </TouchableOpacity>
+              
+              <TouchableOpacity 
+                onPress={handlePermission} 
+                style={[styles.smallBtn, action === "grant" ? styles.grantBtn : styles.revokeBtn]}
+              >
+                <Text style={styles.smallBtnText}>
+                  {action === "grant" ? "Grant Admin" : "Revoke Admin"}
+                </Text>
+              </TouchableOpacity>
+            </View>
+          </Animated.View>
         )}
-      </ScrollView>
 
-      {/* Floating Admin Button */}
-      <TouchableOpacity style={styles.fab} onPress={openModal}>
-        <Text style={{ color: "#fff", fontWeight: "bold" }}>⚙️</Text>
-      </TouchableOpacity>
-
-      {/* Modal Panel (overlay) */}
-      {modalVisible && (
-        <Animated.View style={[styles.modalPanel, { top: slideAnim }]}>
-          <Text style={styles.modalTitle}>Edit Admin Permission</Text>
-
-          <TextInput
-            placeholder="Enter user email"
-            value={email}
-            onChangeText={setEmail}
-            style={styles.input}
-            keyboardType="email-address"
-            autoCapitalize="none"
-          />
-
-          <View style={{ flexDirection: "row", justifyContent: "space-around", marginBottom: 10 }}>
-            <TouchableOpacity
-              onPress={() => { console.log("Grant pressed"); setAction("grant"); }}
-              style={[styles.smallBtn, action === "grant" ? styles.grantBtn : {}]}
-            >
-              <Text style={styles.smallBtnText}>Grant Admin</Text>
-            </TouchableOpacity>
-
-            <TouchableOpacity
-              onPress={() => { console.log("Revoke pressed"); setAction("revoke"); }}
-              style={[styles.smallBtn, action === "revoke" ? styles.revokeBtn : {}]}
-            >
-              <Text style={styles.smallBtnText}>Revoke Admin</Text>
-            </TouchableOpacity>
-          </View>
-
-          <View style={{ flexDirection: "row", justifyContent: "space-between" }}>
-            <TouchableOpacity onPress={handlePermission} style={[styles.smallBtn, styles.grantBtn]}>
-              <Text style={styles.smallBtnText}>Submit</Text>
-            </TouchableOpacity>
-
-            <TouchableOpacity onPress={closeModal} style={[styles.smallBtn, { backgroundColor: "#888" }]}>
-              <Text style={styles.smallBtnText}>Cancel</Text>
-            </TouchableOpacity>
-          </View>
-        </Animated.View>
-      )}
-    </View>
+        {/* Floating Admin Button */}
+        <TouchableOpacity style={styles.fab} onPress={openModal}>
+          <Text style={{ color: "#fff", fontWeight: "bold" }}>⚙️</Text>
+        </TouchableOpacity>
+      </View>
+    </>
   );
 }

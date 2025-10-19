@@ -1,7 +1,7 @@
 // frontend/app/api.js
 import AsyncStorage from "@react-native-async-storage/async-storage";
 
-export const BACKEND_URL = "http://10.160.82.204:5000"; // your backend base
+export const BACKEND_URL = "http://192.168.31.173:5000"; // your backend base
 const BASE_API = `${BACKEND_URL.replace(/\/$/, "")}/api/events`;
 const ADMIN_API = `${BACKEND_URL.replace(/\/$/, "")}/api/admin`;
 
