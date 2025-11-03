@@ -12,6 +12,7 @@ import {
   Animated,
   Easing,
   Button,
+  ActivityIndicator,
 } from "react-native";
 import { Picker } from "@react-native-picker/picker";
 import { fetchEvents, createEvent, getToken, manageAdmin } from "../api";
@@ -34,38 +35,30 @@ export default function AdminScreen() {
   const [events, setEvents] = useState([]);
   const [filter, setFilter] = useState("all");
   const [searchQuery, setSearchQuery] = useState("");
+  const [loading, setLoading] = useState(true);
 
   // Admin Modal States
   const [modalVisible, setModalVisible] = useState(false);
   const [email, setEmail] = useState("");
-  const [action, setAction] = useState("grant"); // "grant" or "revoke"
-  const slideAnim = useState(new Animated.Value(300))[0]; // start below screen
+  const [action, setAction] = useState("grant");
+  const slideAnim = useState(new Animated.Value(400))[0];
 
   // Logout Handler
   const handleLogout = () => {
-    Alert.alert(
-      "Logout",
-      "Are you sure you want to logout?",
-      [
-        { text: "Cancel", style: "cancel" },
-        {
-          text: "Logout",
-          style: "destructive",
-          onPress: () => router.replace("/"), // Navigate to home
-        },
-      ],
-      { cancelable: true }
-    );
+    Alert.alert("Logout", "Are you sure you want to logout?", [
+      { text: "Cancel", style: "cancel" },
+      {
+        text: "Logout",
+        style: "destructive",
+        onPress: () => router.replace("/"),
+      },
+    ]);
   };
 
-  // Header Right Buttons
   React.useLayoutEffect(() => {
     navigation.setOptions({
       headerRight: () => (
         <View style={{ flexDirection: "row", alignItems: "center" }}>
-          <TouchableOpacity onPress={openModal} style={{ marginRight: 15 }}>
-            <Text style={{ color: "#1E90FF", fontWeight: "bold" }}>Edit Permission</Text>
-          </TouchableOpacity>
           <Button title="Logout" onPress={handleLogout} color="#FF4500" />
         </View>
       ),
@@ -74,36 +67,43 @@ export default function AdminScreen() {
 
   const openModal = () => {
     setModalVisible(true);
-    slideAnim.setValue(300);
+    slideAnim.setValue(400);
     Animated.timing(slideAnim, {
-      toValue: 110, // top position on screen
-      duration: 300,
+      toValue: 0,
+      duration: 350,
       easing: Easing.out(Easing.ease),
-      useNativeDriver: false,
+      useNativeDriver: true,
     }).start();
   };
 
   const closeModal = () => {
     Animated.timing(slideAnim, {
-      toValue: 300,
-      duration: 200,
+      toValue: 400,
+      duration: 250,
       easing: Easing.in(Easing.ease),
-      useNativeDriver: false,
+      useNativeDriver: true,
     }).start(() => setModalVisible(false));
   };
 
-  // Event Submission
   const submitEvent = async () => {
-    if (!name || !startDate || !endDate || !time || !venue) {
-      return Alert.alert("Validation", "Please fill required fields.");
-    }
-    if (fileUrl && !/^https?:\/\/.+$/.test(fileUrl)) {
+    if (!name || !startDate || !endDate || !time || !venue)
+      return Alert.alert("Validation", "Please fill all required fields.");
+    if (fileUrl && !/^https?:\/\/.+$/.test(fileUrl))
       return Alert.alert("Invalid URL", "Enter a valid http(s) URL.");
-    }
+
     try {
       const token = await getToken();
       if (!token) return Alert.alert("Unauthorized", "Login again");
-      await createEvent({ name, startDate, endDate, time, venue, description, category, fileUrl });
+      await createEvent({
+        name,
+        startDate,
+        endDate,
+        time,
+        venue,
+        description,
+        category,
+        fileUrl,
+      });
       Alert.alert("Success", "Event Created Successfully");
       clearForm();
       loadEvents();
@@ -120,6 +120,8 @@ export default function AdminScreen() {
     } catch (err) {
       console.error(err);
       Alert.alert("Error", "Failed to load events");
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -128,8 +130,14 @@ export default function AdminScreen() {
   }, []);
 
   const clearForm = () => {
-    setName(""); setStartDate(""); setEndDate(""); setTime(""); setVenue("");
-    setDescription(""); setCategory(""); setFileUrl("");
+    setName("");
+    setStartDate("");
+    setEndDate("");
+    setTime("");
+    setVenue("");
+    setDescription("");
+    setCategory("");
+    setFileUrl("");
   };
 
   const openUrl = async (url) => {
@@ -139,28 +147,21 @@ export default function AdminScreen() {
     else Alert.alert("Cannot open URL");
   };
 
-  // Handle Grant/Revoke Admin
   const handlePermission = async () => {
     if (!email) return Alert.alert("Validation", "Please enter email");
     try {
       const token = await getToken();
       if (!token) return Alert.alert("Unauthorized", "Login again");
-
-      // debug log
-      console.log("manageAdmin called:", { email, action, token: !!token });
-
       const res = await manageAdmin({ email, action }, token);
-      console.log("manageAdmin result:", res);
       Alert.alert("Success", res.message || "Updated role");
       setEmail("");
       closeModal();
     } catch (err) {
-      console.error("handlePermission error:", err);
+      console.error(err);
       Alert.alert("Error", err.message || "Failed to update role");
     }
   };
 
-  // Filtered Events
   const filteredEvents = events.filter((e) => {
     const today = new Date();
     const start = new Date(e.startDate);
@@ -170,11 +171,13 @@ export default function AdminScreen() {
     if (filter === "past" && !(end < today)) return false;
     if (!searchQuery.trim()) return true;
     const q = searchQuery.toLowerCase();
-    return e.name?.toLowerCase().includes(q) ||
-           e.venue?.toLowerCase().includes(q) ||
-           e.description?.toLowerCase().includes(q) ||
-           e.category?.toLowerCase().includes(q) ||
-           e.time?.toLowerCase().includes(q);
+    return (
+      e.name?.toLowerCase().includes(q) ||
+      e.venue?.toLowerCase().includes(q) ||
+      e.description?.toLowerCase().includes(q) ||
+      e.category?.toLowerCase().includes(q) ||
+      e.time?.toLowerCase().includes(q)
+    );
   });
 
   const isOngoing = (e) => {
@@ -184,116 +187,104 @@ export default function AdminScreen() {
     return start <= today && end >= today;
   };
 
-  const styles = StyleSheet.create({
-    root: { flex: 1, position: "relative", backgroundColor: "#fff" },
-    container: { flex: 1, padding: 20 },
-    input: { borderWidth: 1, padding: 10, marginVertical: 5, borderRadius: 5, borderColor: "#ccc", color: "#000" },
-    buttonContainer: { marginVertical: 5 },
-    card: { padding: 10, borderWidth: 1, borderColor: "#ccc", borderRadius: 5, marginVertical: 5, backgroundColor: "#fff" },
-    cardTitle: { fontWeight: "bold", color: "#000" },
-    cardText: { color: "#333" },
-    headerText: { marginTop: 20, fontSize: 18, color: "#000" },
-    picker: { marginVertical: 10, borderWidth: 1, borderColor: "#ccc" },
-    linkText: { color: "#1E90FF", textDecorationLine: "underline" },
-    modalPanel: {
-      position: "absolute",
-      right: 10,
-      width: 320,
-      backgroundColor: "#fff",
-      borderRadius: 10,
-      padding: 15,
-      shadowColor: "#000",
-      shadowOpacity: 0.25,
-      shadowOffset: { width: 0, height: 2 },
-      shadowRadius: 5,
-      elevation: 20,
-      zIndex: 1000,
-    },
-    modalTitle: { fontSize: 18, fontWeight: "bold", marginBottom: 10 },
-    fab: {
-      position: "absolute",
-      bottom: 30,
-      right: 20,
-      backgroundColor: "#1E90FF",
-      width: 50,
-      height: 50,
-      borderRadius: 25,
-      justifyContent: "center",
-      alignItems: "center",
-      shadowColor: "#000",
-      shadowOffset: { width: 0, height: 2 },
-      shadowOpacity: 0.3,
-      shadowRadius: 3,
-      elevation: 8,
-      zIndex: 1000,
-    },
-    smallBtn: {
-      paddingVertical: 10,
-      paddingHorizontal: 12,
-      borderRadius: 6,
-      minWidth: 120,
-      alignItems: "center",
-    },
-    grantBtn: { backgroundColor: "#1E90FF" },
-    revokeBtn: { backgroundColor: "#FF6347" },
-    smallBtnText: { color: "#fff", fontWeight: "600" },
-    modalInput: { 
-      borderWidth: 1, 
-      padding: 10, 
-      marginVertical: 10, 
-      borderRadius: 5, 
-      borderColor: "#ccc", 
-      color: "#000",
-      backgroundColor: "#fff"
-    },
-  });
+  if (loading)
+    return (
+      <View style={styles.loading}>
+        <ActivityIndicator size="large" color="#1E90FF" />
+        <Text style={{ color: "#555", marginTop: 10 }}>Loading events...</Text>
+      </View>
+    );
 
   return (
     <>
-      {/* Stack Screen for header customization */}
-      <Stack.Screen
-        options={{
-          title: "Admin Dashboard",
-          headerRight: () => (
-            <View style={{ flexDirection: "row", alignItems: "center" }}>
-              <Button title="Logout" onPress={handleLogout} color="#FF4500" />
-            </View>
-          ),
-        }}
-      />
-      
+      <Stack.Screen options={{ title: "Admin Dashboard" }} />
+
       <View style={styles.root}>
-        <ScrollView style={styles.container} pointerEvents="box-none" contentContainerStyle={{ paddingBottom: 140 }}>
-          {/* Event Form */}
-          <TextInput placeholder="Event Name" value={name} onChangeText={setName} style={styles.input} placeholderTextColor="#888" />
-          <TextInput placeholder="Start Date (YYYY-MM-DD)" value={startDate} onChangeText={setStartDate} style={styles.input} placeholderTextColor="#888" />
-          <TextInput placeholder="End Date (YYYY-MM-DD)" value={endDate} onChangeText={setEndDate} style={styles.input} placeholderTextColor="#888" />
-          <TextInput placeholder="Time" value={time} onChangeText={setTime} style={styles.input} placeholderTextColor="#888" />
-          <TextInput placeholder="Venue" value={venue} onChangeText={setVenue} style={styles.input} placeholderTextColor="#888" />
-          <TextInput placeholder="Description" value={description} onChangeText={setDescription} style={styles.input} placeholderTextColor="#888" />
-          <TextInput placeholder="Category" value={category} onChangeText={setCategory} style={styles.input} placeholderTextColor="#888" />
-          <TextInput placeholder="Google Drive URL (optional)" value={fileUrl} onChangeText={setFileUrl} style={styles.input} placeholderTextColor="#888" autoCapitalize="none" />
+        <ScrollView
+          style={styles.container}
+          contentContainerStyle={{ paddingBottom: 150 }}
+          showsVerticalScrollIndicator={false}
+        >
+          <Text style={styles.sectionTitle}>Create New Event</Text>
 
-          <View style={styles.buttonContainer}>
-            <TouchableOpacity onPress={submitEvent} style={[styles.smallBtn, styles.grantBtn]}>
-              <Text style={styles.smallBtnText}>Submit Event</Text>
-            </TouchableOpacity>
-          </View>
+          <TextInput
+            placeholder="Event Name"
+            value={name}
+            onChangeText={setName}
+            style={styles.input}
+            placeholderTextColor="#888"
+          />
+          <TextInput
+            placeholder="Start Date (YYYY-MM-DD)"
+            value={startDate}
+            onChangeText={setStartDate}
+            style={styles.input}
+            placeholderTextColor="#888"
+          />
+          <TextInput
+            placeholder="End Date (YYYY-MM-DD)"
+            value={endDate}
+            onChangeText={setEndDate}
+            style={styles.input}
+            placeholderTextColor="#888"
+          />
+          <TextInput
+            placeholder="Time"
+            value={time}
+            onChangeText={setTime}
+            style={styles.input}
+            placeholderTextColor="#888"
+          />
+          <TextInput
+            placeholder="Venue"
+            value={venue}
+            onChangeText={setVenue}
+            style={styles.input}
+            placeholderTextColor="#888"
+          />
+          <TextInput
+            placeholder="Description"
+            value={description}
+            onChangeText={setDescription}
+            style={styles.input}
+            placeholderTextColor="#888"
+          />
+          <TextInput
+            placeholder="Category"
+            value={category}
+            onChangeText={setCategory}
+            style={styles.input}
+            placeholderTextColor="#888"
+          />
+          <TextInput
+            placeholder="Google Drive URL (optional)"
+            value={fileUrl}
+            onChangeText={setFileUrl}
+            style={styles.input}
+            placeholderTextColor="#888"
+            autoCapitalize="none"
+          />
 
-          {/* Search */}
-          <TextInput placeholder="Search events..." value={searchQuery} onChangeText={setSearchQuery} style={styles.input} placeholderTextColor="#888" />
+          <TouchableOpacity
+            onPress={submitEvent}
+            style={[styles.primaryBtn, { backgroundColor: "#1E90FF" }]}
+          >
+            <Text style={styles.btnText}>Submit Event</Text>
+          </TouchableOpacity>
 
-          {/* Filter */}
-          <Text style={styles.headerText}>Filter Events:</Text>
+          <Text style={styles.sectionTitle}>Search & Filter</Text>
+          <TextInput
+            placeholder="Search events..."
+            value={searchQuery}
+            onChangeText={setSearchQuery}
+            style={styles.input}
+            placeholderTextColor="#888"
+          />
+
           <Picker
             selectedValue={filter}
-            onValueChange={(val) => setFilter(val)}
-            style={{
-              ...styles.picker,
-              color: "#000",
-              backgroundColor: "#fff"
-            }}
-            itemStyle={{ color: "#000" }}
+            onValueChange={setFilter}
+            style={styles.picker}
           >
             <Picker.Item label="All" value="all" />
             <Picker.Item label="Ongoing" value="ongoing" />
@@ -301,24 +292,36 @@ export default function AdminScreen() {
             <Picker.Item label="Past" value="past" />
           </Picker>
 
-          {/* Event Cards */}
-          <Text style={styles.headerText}>Events:</Text>
+          <Text style={styles.sectionTitle}>All Events</Text>
           {filteredEvents.length === 0 ? (
-            <Text style={styles.cardText}>No events available.</Text>
+            <Text style={{ color: "#555" }}>No events available.</Text>
           ) : (
             filteredEvents.map((e) => (
-              <View key={e._id} style={[styles.card, isOngoing(e) && { borderColor: "#1E90FF", borderWidth: 2, backgroundColor: "#E0F0FF" }]}>
-                <Text style={styles.cardTitle}>{e.name} {e.category ? `(${e.category})` : null}</Text>
-                <Text style={styles.cardText}>{new Date(e.startDate).toLocaleDateString()} to {new Date(e.endDate).toLocaleDateString()}</Text>
+              <View
+                key={e._id}
+                style={[
+                  styles.card,
+                  isOngoing(e) && {
+                    borderColor: "#1E90FF",
+                    borderWidth: 2,
+                    backgroundColor: "#E8F4FF",
+                  },
+                ]}
+              >
+                <Text style={styles.cardTitle}>
+                  {e.name} {e.category ? `(${e.category})` : ""}
+                </Text>
+                <Text style={styles.cardText}>
+                  {new Date(e.startDate).toLocaleDateString()} -{" "}
+                  {new Date(e.endDate).toLocaleDateString()}
+                </Text>
                 <Text style={styles.cardText}>{e.time}</Text>
                 <Text style={styles.cardText}>{e.venue}</Text>
                 <Text style={styles.cardText}>{e.description}</Text>
                 {e.fileUrl && (
-                  <View style={styles.buttonContainer}>
-                    <TouchableOpacity onPress={() => openUrl(e.fileUrl)}>
-                      <Text style={styles.linkText}>Open Drive Link</Text>
-                    </TouchableOpacity>
-                  </View>
+                  <TouchableOpacity onPress={() => openUrl(e.fileUrl)}>
+                    <Text style={styles.linkText}>Open Drive Link</Text>
+                  </TouchableOpacity>
                 )}
               </View>
             ))
@@ -326,56 +329,173 @@ export default function AdminScreen() {
         </ScrollView>
 
         {/* Admin Permission Modal */}
-        {modalVisible && (
-          <Animated.View style={[styles.modalPanel, { top: slideAnim }]}>
-            <Text style={styles.modalTitle}>Grant/Revoke Admin</Text>
-            
-            <TextInput
-              placeholder="Enter user email"
-              value={email}
-              onChangeText={setEmail}
-              style={styles.modalInput}
-              placeholderTextColor="#888"
-              autoCapitalize="none"
-              keyboardType="email-address"
-            />
-            
-            <Picker
-              selectedValue={action}
-              onValueChange={setAction}
-              style={{
-                marginVertical: 10,
-                borderWidth: 1,
-                borderColor: "#ccc",
-                backgroundColor: "#fff"
-              }}
-            >
-              <Picker.Item label="Grant Admin" value="grant" />
-              <Picker.Item label="Revoke Admin" value="revoke" />
-            </Picker>
+{modalVisible && (
+  <View style={styles.modalBackdrop}>
+    <Animated.View
+      style={[styles.modalPanel, { transform: [{ translateY: slideAnim }] }]}
+      pointerEvents={modalVisible ? "auto" : "none"}
+    >
+      <Text style={styles.modalTitle}>Grant / Revoke Admin</Text>
 
-            <View style={{ flexDirection: "row", justifyContent: "space-between" }}>
-              <TouchableOpacity onPress={closeModal} style={[styles.smallBtn, { backgroundColor: "#666" }]}>
-                <Text style={styles.smallBtnText}>Cancel</Text>
-              </TouchableOpacity>
-              
-              <TouchableOpacity 
-                onPress={handlePermission} 
-                style={[styles.smallBtn, action === "grant" ? styles.grantBtn : styles.revokeBtn]}
-              >
-                <Text style={styles.smallBtnText}>
-                  {action === "grant" ? "Grant Admin" : "Revoke Admin"}
-                </Text>
-              </TouchableOpacity>
-            </View>
-          </Animated.View>
-        )}
+      <TextInput
+        placeholder="Enter user email"
+        value={email}
+        onChangeText={setEmail}
+        style={styles.modalInput}
+        placeholderTextColor="#888"
+        autoCapitalize="none"
+        keyboardType="email-address"
+      />
+
+      <Picker selectedValue={action} onValueChange={setAction} style={styles.picker}>
+        <Picker.Item label="Grant Admin" value="grant" />
+        <Picker.Item label="Revoke Admin" value="revoke" />
+      </Picker>
+
+      <View style={{ flexDirection: "row", justifyContent: "space-between" }}>
+        <TouchableOpacity
+          onPress={closeModal}
+          style={[styles.smallBtn, { backgroundColor: "#666" }]}
+        >
+          <Text style={styles.btnText}>Cancel</Text>
+        </TouchableOpacity>
+
+        <TouchableOpacity
+          onPress={handlePermission}
+          style={[
+            styles.smallBtn,
+            { backgroundColor: action === "grant" ? "#1E90FF" : "#FF6347" },
+          ]}
+        >
+          <Text style={styles.btnText}>
+            {action === "grant" ? "Grant Admin" : "Revoke Admin"}
+          </Text>
+        </TouchableOpacity>
+      </View>
+    </Animated.View>
+  </View>
+)}
+
 
         {/* Floating Admin Button */}
-        <TouchableOpacity style={styles.fab} onPress={openModal}>
-          <Text style={{ color: "#fff", fontWeight: "bold" }}>⚙️</Text>
+        <TouchableOpacity
+          style={styles.fab}
+          onPress={openModal}
+          activeOpacity={0.8}
+          pointerEvents={modalVisible ? "none" : "auto"}
+        >
+          <Text style={{ color: "#fff", fontSize: 20 }}>⚙️</Text>
         </TouchableOpacity>
       </View>
     </>
   );
 }
+
+const styles = StyleSheet.create({
+  root: { flex: 1, backgroundColor: "#f9faff" },
+  container: { flex: 1, padding: 20 },
+  sectionTitle: {
+    fontSize: 18,
+    fontWeight: "700",
+    color: "#1E90FF",
+    marginTop: 10,
+    marginBottom: 5,
+  },
+  input: {
+    borderWidth: 1,
+    padding: 10,
+    marginVertical: 6,
+    borderRadius: 8,
+    borderColor: "#ccc",
+    backgroundColor: "#fff",
+    color: "#000",
+  },
+  picker: {
+    backgroundColor: "#fff",
+    borderRadius: 8,
+    marginVertical: 6,
+  },
+  primaryBtn: {
+    paddingVertical: 12,
+    borderRadius: 8,
+    alignItems: "center",
+    marginTop: 8,
+    elevation: 2,
+  },
+  btnText: { color: "#fff", fontWeight: "bold" },
+  card: {
+    backgroundColor: "#fff",
+    borderRadius: 10,
+    padding: 15,
+    marginVertical: 8,
+    borderWidth: 1,
+    borderColor: "#ccc",
+    shadowColor: "#000",
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 3,
+  },
+  cardTitle: { fontSize: 16, fontWeight: "bold", color: "#000" },
+  cardText: { fontSize: 14, color: "#333", marginVertical: 2 },
+  linkText: {
+    color: "#1E90FF",
+    textDecorationLine: "underline",
+    marginTop: 5,
+  },
+modalPanel: {
+  width: "85%",
+  backgroundColor: "#F5F5F5",
+  borderRadius: 20,
+  padding: 20,
+  elevation: 10,
+  shadowColor: "#000",
+  shadowOpacity: 0.3,
+  shadowRadius: 10,
+  shadowOffset: { width: 0, height: 5 },
+},
+modalBackdrop: {
+  position: "absolute",
+  top: 0,
+  left: 0,
+  right: 0,
+  bottom: 0,
+  backgroundColor: "rgba(0, 0, 0, 0.4)", // dark overlay
+  justifyContent: "center",
+  alignItems: "center",
+  zIndex: 999,
+},
+  modalTitle: { fontSize: 18, fontWeight: "bold", color: "#000", marginBottom: 10 },
+  modalInput: {
+    borderWidth: 1,
+    borderColor: "#ccc",
+    padding: 10,
+    borderRadius: 8,
+    color: "#000",
+    backgroundColor: "#fff",
+    marginVertical: 6,
+  },
+  smallBtn: {
+    paddingVertical: 10,
+    borderRadius: 8,
+    minWidth: 120,
+    alignItems: "center",
+  },
+  fab: {
+    position: "absolute",
+    bottom: 30,
+    right: 25,
+    backgroundColor: "#1E90FF",
+    width: 55,
+    height: 55,
+    borderRadius: 30,
+    alignItems: "center",
+    justifyContent: "center",
+    elevation: 8,
+  },
+  loading: {
+    flex: 1,
+    justifyContent: "center",
+    alignItems: "center",
+    backgroundColor: "#fff",
+  },
+});

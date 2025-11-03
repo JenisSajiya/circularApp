@@ -1,3 +1,4 @@
+//backend/middleware/protectAdmin.js
 const jwt = require("jsonwebtoken");
 
 const protectAdmin = (req, res, next) => {

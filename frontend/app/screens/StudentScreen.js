@@ -1,13 +1,14 @@
 // frontend/app/screens/StudentScreen.js
+
 import React, { useState, useCallback } from "react";
 import {
   View,
   Text,
   ScrollView,
   StyleSheet,
-  Button,
   Alert,
   TextInput,
+  TouchableOpacity,
   Linking,
 } from "react-native";
 import { useFocusEffect } from "@react-navigation/native";
@@ -17,7 +18,6 @@ import { Stack, useRouter } from "expo-router";
 
 export default function StudentScreen() {
   const router = useRouter();
-
   const [events, setEvents] = useState([]);
   const [filter, setFilter] = useState("all");
   const [searchQuery, setSearchQuery] = useState("");
@@ -46,11 +46,8 @@ export default function StudentScreen() {
       : `${BACKEND_URL.replace(/\/$/, "")}/${fileUrl.replace(/^\/?/, "")}`;
 
     const supported = await Linking.canOpenURL(url);
-    if (supported) {
-      await Linking.openURL(url);
-    } else {
-      Alert.alert("Cannot open URL", "This link cannot be opened on your device");
-    }
+    if (supported) await Linking.openURL(url);
+    else Alert.alert("Cannot open URL", "This link cannot be opened on your device");
   };
 
   const handleLogout = () => {
@@ -59,11 +56,7 @@ export default function StudentScreen() {
       "Are you sure you want to logout?",
       [
         { text: "Cancel", style: "cancel" },
-        {
-          text: "Logout",
-          style: "destructive",
-          onPress: () => router.replace("/"), // Navigate to home
-        },
+        { text: "Logout", style: "destructive", onPress: () => router.replace("/") },
       ],
       { cancelable: true }
     );
@@ -97,77 +90,141 @@ export default function StudentScreen() {
   };
 
   const styles = StyleSheet.create({
-    container: { flex: 1, padding: 20, backgroundColor: "#fff" },
-    title: { fontSize: 24, fontWeight: "bold", marginBottom: 15, color: "#000" },
-    input: { borderWidth: 1, padding: 10, marginVertical: 10, borderRadius: 5, borderColor: "#ccc", color: "#000" },
-    card: { padding: 10, borderWidth: 1, borderColor: "#ccc", borderRadius: 5, marginBottom: 10, backgroundColor: "#fff" },
-    cardTitle: { fontWeight: "bold", color: "#000", marginBottom: 5 },
+    root: { flex: 1, backgroundColor: "#fff" },
+    container: { flex: 1, padding: 20 },
+    input: {
+      borderWidth: 1,
+      padding: 10,
+      marginVertical: 5,
+      borderRadius: 5,
+      borderColor: "#ccc",
+      color: "#5687d2ff",
+      backgroundColor: "#fff",
+    },
+    card: {
+      padding: 12,
+      borderWidth: 1,
+      borderColor: "#ccc",
+      borderRadius: 8,
+      marginVertical: 6,
+      backgroundColor: "#fff",
+      shadowColor: "#000",
+      shadowOpacity: 0.1,
+      shadowOffset: { width: 0, height: 2 },
+      shadowRadius: 4,
+      elevation: 2,
+    },
+    cardTitle: { fontWeight: "bold", fontSize: 16, color: "#000", marginBottom: 5 },
     cardText: { color: "#333", marginBottom: 3 },
+    linkText: { color: "#1E90FF", textDecorationLine: "underline" },
+    headerText: { marginTop: 20, fontSize: 18, color: "#1E90FF" },
+    sectionHeader: { marginTop: 20, fontSize: 18, color: "#1E90FF" },
+    picker: {
+      marginVertical: 10,
+      borderWidth: 1,
+      borderColor: "#ccc",
+      borderRadius: 5,
+      backgroundColor: "#fff",
+    },
     buttonContainer: { marginTop: 5 },
-    picker: { marginVertical: 10, borderWidth: 1, borderColor: "#ccc" },
+    smallBtn: {
+      paddingVertical: 10,
+      paddingHorizontal: 12,
+      borderRadius: 6,
+      backgroundColor: "#1E90FF",
+      alignItems: "center",
+      marginTop: 6,
+    },
+    smallBtnText: { color: "#fff", fontWeight: "600" },
   });
 
   return (
     <>
-      {/* This Stack allows header customization in Expo Router */}
       <Stack.Screen
         options={{
           title: "Explore Events",
-          headerRight: () => <Button title="Logout" onPress={handleLogout} color="#FF4500" />,
+          headerRight: () => (
+            <View style={{ flexDirection: "row", alignItems: "center" }}>
+              <TouchableOpacity onPress={handleLogout}>
+                <Text style={{ color: "#FF4500", fontWeight: "bold", fontSize: 16, marginRight: 10 }}>
+                  Logout
+                </Text>
+              </TouchableOpacity>
+            </View>
+          ),
         }}
       />
-      <ScrollView style={styles.container}>
-        {/* Search Bar */}
-        <TextInput
-          placeholder="Search events..."
-          value={searchQuery}
-          onChangeText={setSearchQuery}
-          style={styles.input}
-          placeholderTextColor="#888"
-        />
 
-        {/* Filter Dropdown */}
-        <Picker
-          selectedValue={filter}
-          onValueChange={(val) => setFilter(val)}
-          style={{ ...styles.picker, color: "#000", backgroundColor: "#fff" }}
-          itemStyle={{ color: "#000" }}
+      <View style={styles.root}>
+        <ScrollView
+          style={styles.container}
+          contentContainerStyle={{ paddingBottom: 100 }}
+          showsVerticalScrollIndicator={false}
         >
-          <Picker.Item label="All" value="all" />
-          <Picker.Item label="Ongoing" value="ongoing" />
-          <Picker.Item label="Upcoming" value="upcoming" />
-          <Picker.Item label="Past" value="past" />
-        </Picker>
+          {/* Search */}
+          <TextInput
+            placeholder="Search events..."
+            value={searchQuery}
+            onChangeText={setSearchQuery}
+            style={styles.input}
+            placeholderTextColor="#888"
+          />
 
-        {/* Event Cards */}
-        {filteredEvents.length === 0 ? (
-          <Text style={styles.cardText}>No events available.</Text>
-        ) : (
-          filteredEvents.map((e) => (
-            <View
-              key={e._id}
-              style={[
-                styles.card,
-                isOngoing(e) && { borderColor: "#1E90FF", borderWidth: 2, backgroundColor: "#E0F0FF" },
-              ]}
-            >
-              <Text style={styles.cardTitle}>{e.name} {e.category ? `(${e.category})` : null}</Text>
-              <Text style={styles.cardText}>
-                {new Date(e.startDate).toLocaleDateString()} to {new Date(e.endDate).toLocaleDateString()}
-              </Text>
-              <Text style={styles.cardText}>{e.time}</Text>
-              <Text style={styles.cardText}>{e.venue}</Text>
-              <Text style={styles.cardText}>{e.description}</Text>
+          {/* Filter */}
+          <Text style={styles.sectionHeader}>Filter Events: </Text>
+          <Picker
+            selectedValue={filter}
+            onValueChange={(val) => setFilter(val)}
+            style={styles.picker}
+            itemStyle={{ color: "#000" }}
+          >
+            <Picker.Item label="All" value="all" />
+            <Picker.Item label="Ongoing" value="ongoing" />
+            <Picker.Item label="Upcoming" value="upcoming" />
+            <Picker.Item label="Past" value="past" />
+          </Picker>
 
-              {e.fileUrl && (
-                <View style={styles.buttonContainer}>
-                  <Button title="Open File Link" onPress={() => openFile(e.fileUrl)} color="#1E90FF" />
-                </View>
-              )}
-            </View>
-          ))
-        )}
-      </ScrollView>
+          {/* Event Cards */}
+          <Text style={styles.sectionHeader}>Events:</Text>
+          {filteredEvents.length === 0 ? (
+            <Text style={styles.cardText}>No events available.</Text>
+          ) : (
+            filteredEvents.map((e) => (
+              <View
+                key={e._id}
+                style={[
+                  styles.card,
+                  isOngoing(e) && {
+                    borderColor: "#1E90FF",
+                    borderWidth: 2,
+                    backgroundColor: "#E0F0FF",
+                  },
+                ]}
+              >
+                <Text style={styles.cardTitle}>
+                  {e.name} {e.category ? `(${e.category})` : null}
+                </Text>
+                <Text style={styles.cardText}>
+                  {new Date(e.startDate).toLocaleDateString()} to{" "}
+                  {new Date(e.endDate).toLocaleDateString()}
+                </Text>
+                <Text style={styles.cardText}>{e.time}</Text>
+                <Text style={styles.cardText}>{e.venue}</Text>
+                <Text style={styles.cardText}>{e.description}</Text>
+
+                {e.fileUrl && (
+                  <TouchableOpacity
+                    onPress={() => openFile(e.fileUrl)}
+                    style={styles.smallBtn}
+                  >
+                    <Text style={styles.smallBtnText}>Open Drive Link</Text>
+                  </TouchableOpacity>
+                )}
+              </View>
+            ))
+          )}
+        </ScrollView>
+      </View>
     </>
   );
 }
