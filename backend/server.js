@@ -39,5 +39,10 @@ if (require.main === module) {
   app.listen(PORT, () => console.log(`Local server running on ${PORT}`));
 }
 
+console.log("Running Node version:", process.version);
+
+
 // Export for Vercel
 module.exports = app;
+
+
