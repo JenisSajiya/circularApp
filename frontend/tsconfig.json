@@ -11,7 +11,15 @@
   "include": [
     "**/*.ts",
     "**/*.tsx",
+    "app/api.js",
+    "app/(tabs)/_layout.js",
+    "app/(tabs)/index.js",
+    "app/(tabs)/admin.js",
+    "app/(tabs)/explore.js",
+    "app/screens/AdminScreen.js",
+    "app/screens/StudentScreen.js",
+    "app/screens/HomeScreen.js",
     ".expo/types/**/*.ts",
     "expo-env.d.ts"
-, "app/api.js", "app/(tabs)/_layout.js", "app/(tabs)/index.js", "app/(tabs)/admin.js", "app/(tabs)/explore.js", "app/screens/AdminScreen.js", "app/screens/StudentScreen.js", "app/screens/HomeScreen.js"  ]
+  ]
 }

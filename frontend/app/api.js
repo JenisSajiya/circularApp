@@ -1,7 +1,10 @@
 // frontend/app/api.js
+import Constants from "expo-constants";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 
-export const BACKEND_URL = "http://10.54.124.204:5000"; // your backend base
+const BACKEND_URL =
+  Constants.expoConfig?.extra?.backendUrl || process.env.BACKEND_URL || "https://circular-app-dzfd.vercel.app";
+ // your backend base
 const BASE_API = `${BACKEND_URL.replace(/\/$/, "")}/api/events`;
 const ADMIN_API = `${BACKEND_URL.replace(/\/$/, "")}/api/admin`;
 

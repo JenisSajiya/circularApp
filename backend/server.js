@@ -13,7 +13,24 @@ dotenv.config();
 const app = express();
 
 // Middleware
-app.use(cors());
+// CORS FIX
+app.use(cors({
+  origin: [
+    "http://localhost:8081",
+    "http://localhost:19006",
+    "exp://127.0.0.1:19000",
+    "http://localhost",
+    "https://circular-app-dzfd.vercel.app",
+    "*"
+  ],
+  methods: ["GET", "POST", "PUT", "DELETE"],
+  allowedHeaders: ["Content-Type", "Authorization"],
+  credentials: true
+}));
+
+// Preflight
+app.options("*", cors());
+
 app.use(express.json());
 
 // Routes

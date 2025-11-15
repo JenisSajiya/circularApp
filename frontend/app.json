@@ -1,3 +1,4 @@
+//frontend/app.json
 {
   "expo": {
     "name": "frontend",
@@ -43,6 +44,12 @@
     "experiments": {
       "typedRoutes": true,
       "reactCompiler": true
+    },
+    "extra": {
+      "router": {},
+      "eas": {
+        "projectId": "a76040fd-a158-4ea0-a56a-e656ee47f102"
+      }
     }
   }
 }
