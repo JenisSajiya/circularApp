@@ -1,4 +1,7 @@
+<<<<<<< HEAD
 //frontend/eas.json
+=======
+>>>>>>> f02ea9759723e10e8bcd250277ef65b87d2ce48d
 {
   "cli": {
     "version": ">= 16.26.0",
@@ -13,11 +16,15 @@
       "distribution": "internal"
     },
     "production": {
+<<<<<<< HEAD
       "autoIncrement": true,
       "env": {
         "BACKEND_URL": "https://circular-app-dzfd.vercel.app"
       },
       "releaseChannel": "production"
+=======
+      "autoIncrement": true
+>>>>>>> f02ea9759723e10e8bcd250277ef65b87d2ce48d
     }
   },
   "submit": {

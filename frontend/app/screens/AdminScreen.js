@@ -166,9 +166,11 @@ export default function AdminScreen() {
     const today = new Date();
     const start = new Date(e.startDate);
     const end = new Date(e.endDate);
+
     if (filter === "ongoing" && !(start <= today && end >= today)) return false;
     if (filter === "upcoming" && !(start > today)) return false;
     if (filter === "past" && !(end < today)) return false;
+
     if (!searchQuery.trim()) return true;
     const q = searchQuery.toLowerCase();
     return (
@@ -281,16 +283,18 @@ export default function AdminScreen() {
             placeholderTextColor="#888"
           />
 
-          <Picker
-            selectedValue={filter}
-            onValueChange={setFilter}
-            style={styles.picker}
-          >
+          
+            <Picker
+              selectedValue={filter}
+              onValueChange={(val) => setFilter(val)}
+              style={styles.picker}
+              itemStyle={{ color: "#000" }}
+            >
             <Picker.Item label="All" value="all" />
             <Picker.Item label="Ongoing" value="ongoing" />
             <Picker.Item label="Upcoming" value="upcoming" />
             <Picker.Item label="Past" value="past" />
-          </Picker>
+            </Picker>
 
           <Text style={styles.sectionTitle}>All Events</Text>
           {filteredEvents.length === 0 ? (
@@ -347,10 +351,11 @@ export default function AdminScreen() {
         keyboardType="email-address"
       />
 
-      <Picker selectedValue={action} onValueChange={setAction} style={styles.picker}>
+      <Picker selectedValue={action} onValueChange={setAction} style={styles.picker} itemStyle={{ color: "#000" }}>
         <Picker.Item label="Grant Admin" value="grant" />
         <Picker.Item label="Revoke Admin" value="revoke" />
       </Picker>
+
 
       <View style={{ flexDirection: "row", justifyContent: "space-between" }}>
         <TouchableOpacity

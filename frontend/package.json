@@ -18,7 +18,11 @@
     "@react-navigation/bottom-tabs": "^7.4.0",
     "@react-navigation/elements": "^2.6.3",
     "@react-navigation/native": "^7.1.8",
+<<<<<<< HEAD
     "expo": "54.0.23",
+=======
+    "expo": "54.0.22",
+>>>>>>> f02ea9759723e10e8bcd250277ef65b87d2ce48d
     "expo-blur": "~15.0.7",
     "expo-constants": "~18.0.9",
     "expo-document-picker": "~14.0.7",
